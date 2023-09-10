@@ -1,0 +1,1 @@
+[![Build status](https://ci.appveyor.com/api/projects/status/yv8v68k4392rfv55?svg=true)](https://ci.appveyor.com/project/Vladimir-Study/netology-js-dnd)
