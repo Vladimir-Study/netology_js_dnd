@@ -1,0 +1,35 @@
+.board {
+  display: flex;
+  width: 15vw;
+  flex-direction: column;
+  align-items: center;
+  border: 2px rgb(255, 118, 64) solid;
+  border-radius: 1em;
+  margin-left: 1em;
+}
+
+.board-header {
+  display: flex;
+  position: relative;
+  font-size: 1em;
+  width: 100%;
+  height: 10vh;
+  align-items: center;
+  justify-content: center;
+  background-color: rgb(255, 130, 67);
+  border-radius: 1em 1em 0 0;
+  z-index: -1;
+}
+
+.board-tasks {
+  display: flex;
+  flex-direction: column;
+}
+
+.close-board-icon {
+  height: 1em;
+  width: 1em;
+  position: absolute;
+  top: -1em;
+  right: 0;
+}
