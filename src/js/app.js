@@ -1,86 +1,238 @@
 // TODO: write code here
-import Tasks from './tasks/tasks';
+/* eslint-disable no-param-reassign */
+/* eslint-disable no-unused-expressions */
+/* eslint-disable no-loop-func */
+import Board from './tasks/tasks';
 
-const canvas = document.querySelector('.canvas');
+const board = new Board();
+const addBtnAll = document.querySelectorAll('.board-add-btn');
+let currentDroppable = null;
+let placeholder;
+let isDraggingStarted = false;
+let movingElement;
 
-const boards = document.querySelectorAll('.board');
-const tasks = new Tasks();
-const addTask = document.querySelectorAll('.add-task-link');
-const addFormBtn = document.querySelectorAll('.add-task-form-btn');
-let actualAddBtn;
-let actualForm;
-let actualFormInput;
-let boardName;
-let currentDropTask;
+for (const addBtn of addBtnAll) {
+  addBtn.addEventListener('click', (event) => {
+    const previousBoard = event.target.previousElementSibling;
+    const insertText = previousBoard.value;
+    const boardColumn = event.target.parentNode.previousElementSibling;
+    board.addBoard(boardColumn, insertText);
+    previousBoard.value = null;
+  });
+}
 
-canvas.addEventListener('click', (e) => {
-  if (Array.from(addTask).includes(e.target)) {
-    boardName = e.target.parentElement.previousElementSibling;
-    actualAddBtn = e.target;
-    actualAddBtn.classList.add('hide-elem');
-    actualForm = e.target.nextElementSibling;
-    actualForm.classList.remove('hide-elem');
-    addTask.forEach((elem) => {
-      if (elem !== actualAddBtn) {
-        elem.nextElementSibling.classList.add('hide-elem');
-        elem.classList.remove('hide-elem');
+const initialMovingElementPageXY = {
+  x: 0,
+  y: 0,
+  set: (movingElement) => {
+    const rect = movingElement.getBoundingClientRect();
+    initialMovingElementPageXY.x = rect.x + window.scrollX;
+    initialMovingElementPageXY.y = rect.y + window.scrollY;
+  },
+};
+
+const shifts = {
+  shiftX: 0,
+  shiftY: 0,
+  set: (clientX, clientY, movingElement) => {
+    shifts.shiftX = clientX - movingElement.getBoundingClientRect().left;
+    shifts.shiftY = clientY - movingElement.getBoundingClientRect().top;
+  },
+};
+
+const moveAt = (element, pageX, pageY) => {
+  element.style.transform = `translate(${
+    pageX - initialMovingElementPageXY.x - shifts.shiftX
+  }px, ${
+    pageY - initialMovingElementPageXY.y - shifts.shiftY
+  }px) rotate(-3deg)`;
+};
+
+const getElementCoordinates = (node, searchCoordsBy) => {
+  const rect = node.getBoundingClientRect();
+  return {
+    top:
+      searchCoordsBy === 'by-center'
+        ? rect.top + rect.height / 2
+        : rect.top + 10,
+    left: rect.left + rect.width / 2,
+  };
+};
+
+const isAbove = (nodeA, nodeB) => {
+  const rectA = nodeA.getBoundingClientRect();
+  const rectB = nodeB.getBoundingClientRect();
+
+  return rectA.top + rectA.height / 2 < rectB.top + rectB.height / 2;
+};
+
+// const isRight = (nodeA, nodeB) => {
+//   const rectA = nodeA.getBoundingClientRect();
+//   const rectB = nodeB.getBoundingClientRect();
+
+//   return rectA.left + rectA.width / 2 < rectB.left + rectB.width / 2;
+// };
+
+const getElementBelow = (movingElement, searchCoordsBy) => {
+  const movingElementCenter = getElementCoordinates(
+    movingElement,
+    searchCoordsBy,
+  );
+  movingElement.hidden = true;
+  const elementBelow = document.elementFromPoint(
+    movingElementCenter.left,
+    movingElementCenter.top,
+  );
+  movingElement.hidden = false;
+  return elementBelow;
+};
+
+const processEmptySections = () => {
+  document
+    .querySelectorAll('.board-column-content-wrapper')
+    .forEach((section) => {
+      if (
+        !section.querySelector('.board-item:not(.emptySectionHiddenLesson)')
+      ) {
+        const emptySectionHiddenLesson = document.createElement('div');
+        emptySectionHiddenLesson.classList.add(
+          'board-item',
+          'emptySectionHiddenLesson',
+        );
+        section.append(emptySectionHiddenLesson);
+      } else {
+        const emptySectionHiddenLesson = section.querySelector(
+          '.emptySectionHiddenLesson',
+        );
+        emptySectionHiddenLesson
+          && section.removeChild(emptySectionHiddenLesson);
       }
     });
+};
+
+const createPlaceholder = () => {
+  placeholder = document.createElement('div');
+  placeholder.classList.add('placeholder');
+  movingElement.parentNode.insertBefore(placeholder, movingElement);
+};
+
+const onMouseMove = (event) => {
+  if (!isDraggingStarted) {
+    isDraggingStarted = true;
+    createPlaceholder();
+    Object.assign(movingElement.style, {
+      position: 'absolute',
+      zIndex: 1000,
+      left: `${initialMovingElementPageXY.x}px`,
+      top: `${initialMovingElementPageXY.y}px`,
+    });
   }
-});
+  moveAt(movingElement, event.pageX, event.pageY);
 
-canvas.addEventListener('mouseover', (e) => {
-  if (e.target.className === 'task') {
-    tasks.addCloseIcon(e.target);
+  const elementBelow = getElementBelow(movingElement, 'by-center');
+  if (!elementBelow) return;
+  const droppableBelow = elementBelow.closest('.board-item');
+  if (currentDroppable !== droppableBelow) {
+    currentDroppable = droppableBelow;
+    if (currentDroppable) {
+      if (
+        !isAbove(movingElement, currentDroppable)
+        || currentDroppable.classList.contains('emptySectionHiddenLesson')
+      ) {
+        currentDroppable.parentNode.insertBefore(
+          placeholder,
+          currentDroppable,
+        );
+      } else {
+        currentDroppable.parentNode.insertBefore(
+          placeholder,
+          currentDroppable.nextElementSibling,
+        );
+      }
+    }
   }
-});
+};
 
-canvas.addEventListener('mouseout', (e) => {
-  if (e.target.className === 'task') {
-    e.target.removeChild(e.target.firstElementChild);
+const setMovingElement = (event) => {
+  movingElement = event.target;
+};
+
+const onMouseUp = () => {
+  if (!isDraggingStarted) {
+    document.removeEventListener('mousemove', onMouseMove);
+    movingElement.onmouseup = null;
+    return;
   }
-});
 
-canvas.addEventListener('click', (e) => {
-  if (Array.from(addFormBtn).includes(e.target)) {
-    actualFormInput = e.target.previousElementSibling;
-    tasks.addTask(boardName, actualFormInput.value);
-    actualForm.classList.add('hide-elem');
-    actualAddBtn.classList.remove('hide-elem');
-    actualFormInput.value = '';
-  }
-});
+  placeholder.parentNode.insertBefore(movingElement, placeholder);
+  Object.assign(movingElement.style, {
+    position: 'relative',
+    left: 'auto',
+    top: 'auto',
+    zIndex: 'auto',
+    transform: 'none',
+  });
+  document.removeEventListener('mousemove', onMouseMove);
+  isDraggingStarted = false;
+  placeholder && placeholder.parentNode.removeChild(placeholder);
+  movingElement.onmouseup = null;
+  movingElement = null;
 
-canvas.addEventListener('click', (e) => {
-  if (e.target.className === 'close-icon') {
-    const currentTask = e.target.parentElement;
-    const currentBoard = currentTask.parentElement;
-    currentBoard.removeChild(currentTask);
-  }
-});
+  processEmptySections();
+};
 
-function dragOver(e) {
-  e.preventDefault();
-}
+const onMouseDown = (event) => {
+  setMovingElement(event);
+  shifts.set(event.clientX, event.clientY, movingElement);
+  initialMovingElementPageXY.set(movingElement);
+  document.addEventListener('mousemove', onMouseMove);
+  movingElement.onmouseup = onMouseUp;
+};
 
-function dragDrop() {
-  this.childNodes[3].append(currentDropTask);
-}
+const draggableElementPosition = {
+  leftX: 0,
+  rightX: 0,
+  topY: 0,
+  buttomY: 0,
+};
 
-boards.forEach((board) => {
-  board.addEventListener('dragover', dragOver);
-  board.addEventListener('drop', dragDrop);
-});
+let isDraggableElement = false;
+let onDragElem;
 
-function drag(event) {
-  event.dataTransfer.setData('target', event.target);
-}
-
-canvas.addEventListener('mouseover', (e) => {
-  if (e.target.className === 'task') {
-    currentDropTask = e.target;
-    currentDropTask.addEventListener('dragstart', (event) => {
-      drag(event);
+window.addEventListener('mouseover', (event) => {
+  for (const draggableElement of document.querySelectorAll('.board-item')) {
+    draggableElement.onmousedown = onMouseDown;
+    draggableElement.ondragstart = () => false;
+    let closeIcon;
+    if (draggableElement === event.target) {
+      onDragElem = draggableElement;
+      draggableElementPosition.leftX = draggableElement.getBoundingClientRect().x;
+      draggableElementPosition.rightX = draggableElement.getBoundingClientRect().x
+        + draggableElement.getBoundingClientRect().width;
+      draggableElementPosition.topY = draggableElement.getBoundingClientRect().y;
+      draggableElementPosition.buttomY = draggableElement.getBoundingClientRect().y
+        + draggableElement.getBoundingClientRect().height;
+    }
+    window.addEventListener('mousemove', (event) => {
+      isDraggableElement = !!(((draggableElementPosition.leftX < event.clientX
+        && event.clientX < draggableElementPosition.rightX)
+        && (draggableElementPosition.topY < event.clientY
+        && event.clientY < draggableElementPosition.buttomY)));
+      if (onDragElem !== undefined) {
+        closeIcon = onDragElem.querySelector('.close-icon');
+        if (closeIcon === null) {
+          board.addCloseIcon(onDragElem);
+        }
+        if (closeIcon !== null) {
+          closeIcon.addEventListener('click', (event) => {
+            event.target.parentNode.remove();
+          });
+        }
+        if (!isDraggableElement && closeIcon !== null) {
+          closeIcon.remove();
+          onDragElem = undefined;
+        }
+      }
     });
   }
 });

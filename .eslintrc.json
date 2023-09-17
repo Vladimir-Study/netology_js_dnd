@@ -6,7 +6,8 @@
      "jest": true
   },
   "rules": {
-    "class-methods-use-this": ["error", { "exceptMethods": ["addTask", "addCloseIcon"] }],
+    "no-shadow": "off",
+    "class-methods-use-this": ["error", { "exceptMethods": ["addBoard", "addCloseIcon"] }],
     "no-restricted-syntax": [
       "error",
       "LabeledStatement",
