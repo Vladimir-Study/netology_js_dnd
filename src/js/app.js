@@ -6,6 +6,7 @@ import Board from './tasks/tasks';
 
 const board = new Board();
 const addBtnAll = document.querySelectorAll('.board-add-btn');
+const allTask = document.querySelectorAll('.board-item');
 let currentDroppable = null;
 let placeholder;
 let isDraggingStarted = false;
@@ -189,50 +190,25 @@ const onMouseDown = (event) => {
   movingElement.onmouseup = onMouseUp;
 };
 
-const draggableElementPosition = {
-  leftX: 0,
-  rightX: 0,
-  topY: 0,
-  buttomY: 0,
-};
-
-let isDraggableElement = false;
-let onDragElem;
-
-window.addEventListener('mouseover', (event) => {
-  for (const draggableElement of document.querySelectorAll('.board-item')) {
+window.addEventListener('mouseover', () => {
+  for (const draggableElement of allTask) {
     draggableElement.onmousedown = onMouseDown;
     draggableElement.ondragstart = () => false;
-    let closeIcon;
-    if (draggableElement === event.target) {
-      onDragElem = draggableElement;
-      draggableElementPosition.leftX = draggableElement.getBoundingClientRect().x;
-      draggableElementPosition.rightX = draggableElement.getBoundingClientRect().x
-        + draggableElement.getBoundingClientRect().width;
-      draggableElementPosition.topY = draggableElement.getBoundingClientRect().y;
-      draggableElementPosition.buttomY = draggableElement.getBoundingClientRect().y
-        + draggableElement.getBoundingClientRect().height;
-    }
-    window.addEventListener('mousemove', (event) => {
-      isDraggableElement = !!(((draggableElementPosition.leftX < event.clientX
-        && event.clientX < draggableElementPosition.rightX)
-        && (draggableElementPosition.topY < event.clientY
-        && event.clientY < draggableElementPosition.buttomY)));
-      if (onDragElem !== undefined) {
-        closeIcon = onDragElem.querySelector('.close-icon');
-        if (closeIcon === null) {
-          board.addCloseIcon(onDragElem);
-        }
-        if (closeIcon !== null) {
-          closeIcon.addEventListener('click', (event) => {
-            event.target.parentNode.remove();
-          });
-        }
-        if (!isDraggableElement && closeIcon !== null) {
-          closeIcon.remove();
-          onDragElem = undefined;
-        }
-      }
-    });
   }
+});
+
+allTask.forEach((task) => {
+  let currentElement;
+  let closeIcon;
+  task.addEventListener('mouseenter', (event) => {
+    currentElement = event.target;
+    board.addCloseIcon(currentElement);
+    closeIcon = currentElement.querySelector('.close-icon');
+    closeIcon.addEventListener('click', (event) => {
+      event.target.parentNode.remove();
+    });
+    currentElement.addEventListener('mouseleave', () => {
+      closeIcon.remove();
+    });
+  });
 });
