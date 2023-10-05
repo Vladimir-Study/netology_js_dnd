@@ -6,11 +6,11 @@ import Board from './tasks/tasks';
 
 const board = new Board();
 const addBtnAll = document.querySelectorAll('.board-add-btn');
-const allTask = document.querySelectorAll('.board-item');
 let currentDroppable = null;
 let placeholder;
 let isDraggingStarted = false;
 let movingElement;
+let closeIcon;
 
 for (const addBtn of addBtnAll) {
   addBtn.addEventListener('click', (event) => {
@@ -191,24 +191,33 @@ const onMouseDown = (event) => {
 };
 
 window.addEventListener('mouseover', () => {
-  for (const draggableElement of allTask) {
+  for (const draggableElement of document.querySelectorAll('.board-item')) {
     draggableElement.onmousedown = onMouseDown;
     draggableElement.ondragstart = () => false;
   }
 });
 
-allTask.forEach((task) => {
-  let currentElement;
-  let closeIcon;
-  task.addEventListener('mouseenter', (event) => {
-    currentElement = event.target;
-    board.addCloseIcon(currentElement);
-    closeIcon = currentElement.querySelector('.close-icon');
-    closeIcon.addEventListener('click', (event) => {
-      event.target.parentNode.remove();
-    });
-    currentElement.addEventListener('mouseleave', () => {
-      closeIcon.remove();
+function addCloseIcon(item) {
+  if (closeIcon) {
+    closeIcon.remove();
+  }
+  board.addCloseIcon(item);
+  closeIcon = item.querySelector('.close-icon');
+  closeIcon.addEventListener('click', (event) => {
+    event.target.parentNode.remove();
+  });
+}
+
+for (const board of document.querySelectorAll('.column')) {
+  board.addEventListener('mouseover', (event) => {
+    const item = event.target;
+    const isItem = item.classList.contains('board-item');
+    if (!isItem) return;
+    addCloseIcon(item);
+    item.addEventListener('mouseleave', () => {
+      if (closeIcon) {
+        closeIcon.remove();
+      }
     });
   });
-});
+}
